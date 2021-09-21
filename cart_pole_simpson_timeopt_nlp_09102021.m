@@ -3,7 +3,8 @@ tic;
 
 mc=1; mp=1; L=0.5; g=9.81; %Parameters of the system
 
-n=50; % number of points defining the path
+n=51; % number of points defining the path (must be odd)
+n_seg=(n-1)/2; % number of segments. 1 segment contain 3 points: k, k+1/2, k+1
 
 % Decision Variables: x, v, a, theta, omega, alpha, u, T
 n_bc=8; n_dv=7*n+1;
@@ -37,17 +38,17 @@ var_list_guess=[x_list_guess,v_list_guess,a_list_guess,theta_list_guess,omega_li
 
 % Optimization
 options = optimoptions('fmincon','MaxFunctionEvaluations',10000*n,'StepTolerance',1e-3);
-func_cost=@(var_list)cart_pole_timeopt_cost(var_list,n);
-func_nlcon=@(var_list)cart_pole_timeopt_nlcon(var_list,n,mc,mp,L,g);
+func_cost=@(var_list)cart_pole_simpson_timeopt_cost(var_list,n);
+func_nlcon=@(var_list)cart_pole_simpson_timeopt_nlcon(var_list,n,mc,mp,L,g);
 [var_list,cost]=fmincon(func_cost,var_list_guess,A,b,Aeq,beq,[],[],func_nlcon,options);
 x_list=var_list(1:n); v_list=var_list((n+1):(2*n)); a_list=var_list((2*n+1):(3*n)); 
 theta_list=var_list((3*n+1):(4*n)); omega_list=var_list((4*n+1):(5*n)); alpha_list=var_list((5*n+1):(6*n)); 
 u_list=var_list((6*n+1):(7*n)); T=var_list(7*n+1);
-t1=0; tf=T; h=(tf-t1)/(n-1); t_list=linspace(t1,tf,n);
+t1=0; tf=T; h=(tf-t1)/n_seg; t_list=linspace(t1,tf,n);
 
 toc;
 
-effort_total=h/2*(u_list(1)^2+u_list(end)^2+2*sum(u_list(2:(end-1)).^2));
+effort_total=h/6*(u_list(1)^2+u_list(end)^2+4*sum(u_list(2:2:(end-1)).^2)+2*sum(u_list(3:2:(end-2)).^2));
 fprintf('\nTotal effort: %g.\n',effort_total);
 fprintf('\nT: %g.\n',T);
 fprintf('\nCost of the optimal path (Weighted): %g.\n',cost);
