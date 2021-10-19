@@ -1,56 +1,3 @@
-% function [c,ceq] = single_stance_nlcon (var_list,n,m_list,I_list,g,P,G,vG,aG)
-% % Nonlinear conditions.
-% % P,G,vG,aG are symbolic expressions dependent on q,vq,aq.
-% 
-% 
-% ceq=[]; c=0;
-% 
-% q_mat=reshape(var_list(1:(5*n)),5,n);
-% vq_mat=reshape(var_list((5*n+1):(10*n)),5,n);
-% aq_mat=reshape(var_list((10*n+1):(15*n)),5,n);
-% P_mat=reshape(var_list((15*n+1):(25*n)),10,n);
-% G_mat=reshape(var_list((25*n+1):(35*n)),10,n);
-% vG_mat=reshape(var_list((35*n+1):(45*n)),10,n);
-% aG_mat=reshape(var_list((45*n+1):(55*n)),10,n);
-% u_mat=reshape(var_list((55*n+1):(60*n)),5,n);
-% 
-% for i=1:n % at every knot point
-%     
-%     q_list=q_mat(:,i); vq_list=vq_mat(:,i); aq_list=aq_mat(:,i); P_list=P_mat(:,i); G_list=G_mat(:,i); vG_list=vG_mat(:,i); aG_list=aG_mat(:,i); u_list=u_mat(:,i);
-%     
-%     % Dynamics:
-%     P0i=0; P0j=0; P2_list=[P0i;P0j;P_list(1:4);P_list(3:4);P_list(7:8)];
-%     P2i_list=P2_list(1:2:10); P2j_list=P2_list(2:2:10); Gi_list=G_list(1:2:10); Gj_list=G_list(2:2:10); aGi_list=aG_list(1:2:10); aGj_list=aG_list(2:2:10); 
-%     for k=1:length(u_list)
-%         P2i=P2i_list(k); P2j=P2j_list(k);
-%         torqueG_list=-m_list*g.*(Gi_list-P2i);
-%         accel_list=m_list.*((Gi_list-P2i).*aGj_list-(Gj_list-P2j).*aGi_list)-I_list.*aq_list;
-%         eq_dynamics=u_list(k)+sum(torqueG_list(k:5))-sum(accel_list(k:5));
-%         ceq=[ceq,eq_dynamics];
-%     end
-% 
-%     % Kinematics:
-%     % !!! PUT KINEMATICS EXPLICITLY HERE!!!
-%     
-%     P_knm_list=P; G_knm_list=G; vG_knm_list=vG; aG_knm_list=aG; %_knm_list contains values calculated by kinematics
-%     for k=1:length(q_list)
-%         % Replace symbolic variables in the equations with corresponding values
-%         P_knm_list=subs(P_knm_list,['q',num2str(k)],q_list(k));
-%         G_knm_list=subs(G_knm_list,['q',num2str(k)],q_list(k));
-%         vG_knm_list=subs(vG_knm_list,['q',num2str(k)],q_list(k));
-%         vG_knm_list=subs(vG_knm_list,['vq',num2str(k)],vq_list(k));
-%         aG_knm_list=subs(aG_knm_list,['q',num2str(k)],q_list(k));
-%         aG_knm_list=subs(aG_knm_list,['vq',num2str(k)],vq_list(k));
-%         aG_knm_list=subs(aG_knm_list,['aq',num2str(k)],aq_list(k));
-%     end
-%     P_knm_list=double(P_knm_list); G_knm_list=double(G_knm_list); vG_knm_list=double(vG_knm_list); aG_knm_list=double(aG_knm_list);
-%     ceq=[ceq,(P_list-P_knm_list)',(G_list-G_knm_list)',(vG_list-vG_knm_list)',(aG_list-aG_knm_list)'];
-%     
-% end
-% 
-% 
-% end
-
 function [c,ceq] = single_stance_nlcon (var_list,n,m_list,I_list,g,L_list,d_list)
 % Nonlinear conditions.
 % P,G,vG,aG are symbolic expressions dependent on q,vq,aq.
@@ -75,12 +22,12 @@ for i=1:n % at every knot point
     q_list=q_mat(:,i); vq_list=vq_mat(:,i); aq_list=aq_mat(:,i); P_list=P_mat(:,i); G_list=G_mat(:,i); vG_list=vG_mat(:,i); aG_list=aG_mat(:,i); u_list=u_mat(:,i);
     
     % Dynamics:
-    P0i=0; P0j=0; P2_list=[P0i;P0j;P_list(1:4);P_list(3:4);P_list(7:8)];
-    P2i_list=P2_list(1:2:10); P2j_list=P2_list(2:2:10); Gi_list=G_list(1:2:10); Gj_list=G_list(2:2:10); aGi_list=aG_list(1:2:10); aGj_list=aG_list(2:2:10); 
+    P0i=0; P0j=0; Pu_list=[P0i;P0j;P_list(1:4);P_list(3:4);P_list(7:8)];
+    Pui_list=Pu_list(1:2:10); Puj_list=Pu_list(2:2:10); Gi_list=G_list(1:2:10); Gj_list=G_list(2:2:10); aGi_list=aG_list(1:2:10); aGj_list=aG_list(2:2:10); 
     for k=1:length(u_list)
-        P2i=P2i_list(k); P2j=P2j_list(k);
-        torqueG_list=-m_list*g.*(Gi_list-P2i);
-        accel_list=m_list.*((Gi_list-P2i).*aGj_list-(Gj_list-P2j).*aGi_list)-I_list.*aq_list;
+        Pui=Pui_list(k); Puj=Puj_list(k);
+        torqueG_list=-m_list*g.*(Gi_list-Pui);
+        accel_list=m_list.*((Gi_list-Pui).*aGj_list-(Gj_list-Puj).*aGi_list)-I_list.*aq_list;
         eq_dynamics=u_list(k)+sum(torqueG_list(k:5))-sum(accel_list(k:5));
         ceq=[ceq,eq_dynamics];
     end
@@ -130,6 +77,7 @@ for i=1:n % at every knot point
     aG=[aG1i,aG1j,aG2i,aG2j,aG3i,aG3j,aG4i,aG4j,aG5i,aG5j]';
 
     ceq=[ceq,(P_list-P)',(G_list-G)',(vG_list-vG)',(aG_list-aG)'];
+%     ceq=[ceq,(P_list-P)',(G_list-G)'];
     
 end
 
