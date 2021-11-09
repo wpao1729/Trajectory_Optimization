@@ -1,21 +1,40 @@
-function var_list_guess=initialize_standing_jump(n,qi_list,qf_list,L_list,d_list,m_list,I_list,g,d_jump,h_jump,tf)
+function var_list_guess=initialize_jumping(n,qi_list,qf_list,L_list,d_list,m_list,I_list,g,d_jump,h_jump,t_list,isflip)
 
 var_list_guess=zeros(1,42*n+2);
 
 L1=L_list(1);L2=L_list(2);L3=L_list(3);
 d1=d_list(1);d2=d_list(2);d3=d_list(3);
 
-q_mat=repmat(qi_list',1,n);
-vq_mat=zeros(3,n); aq_mat=zeros(3,n);
-vP0_mat=zeros(2,n);aP0_mat=zeros(2,n);
+q_mat=zeros(3,n); vq_mat=zeros(3,n); aq_mat=zeros(3,n);
+tf=t_list(end);
+for k=1:3
+    a=-6*(qf_list(k)-qi_list(k))/(tf^3); 
+    q_mat(k,:)=a/3*(t_list.^3)-a*tf/2*(t_list.^2)+qi_list(k);
+    vq_mat(k,:)=a*(t_list.^2)-a*tf*t_list;
+    aq_mat(k,:)=2*a*t_list-a*tf;
+end
+
+P0_mat=zeros(2,n); vP0_mat=zeros(2,n); aP0_mat=zeros(2,n);
+P0_mat(1,:)=linspace(0,d_jump,n);
+% Calculate a parabola for P0j(t) initial guess
+if isflip
+    dh=0.75;
+else
+    dh=0.3;
+end
+b=2*(h_jump+dh)*(1+sqrt(dh/(h_jump+dh)))/tf;
+a=-b^2/(4*(h_jump+dh));
+P0_mat(2,:)=a*t_list.^2+b*t_list;
+vP0_mat(1,:)=d_jump/tf;
+vP0_mat(2,:)=2*a*t_list+b;
+% aP0i=0;
+aP0_mat(2,:)=2*a;
 
 var_list_guess(1:(3*n))=reshape(q_mat,1,3*n);
 var_list_guess((3*n+1):(6*n))=reshape(vq_mat,1,3*n);
 var_list_guess((6*n+1):(9*n))=reshape(aq_mat,1,3*n);
 var_list_guess((17*n+1):(19*n))=reshape(vP0_mat,1,2*n);
 var_list_guess((19*n+1):(21*n))=reshape(aP0_mat,1,2*n);
-
-P0_mat=[linspace(0,d_jump,n);linspace(0,h_jump,n)];
 
 P_mat=zeros(8,n); G_mat=zeros(6,n); vG_mat=zeros(6,n); aG_mat=zeros(6,n); u_mat=zeros(3,n);
 for i=1:n % at every knot point
@@ -72,8 +91,26 @@ var_list_guess((9*n+1):(17*n))=reshape(P_mat,1,8*n);
 var_list_guess((21*n+1):(27*n))=reshape(G_mat,1,6*n);
 var_list_guess((27*n+1):(33*n))=reshape(vG_mat,1,6*n);
 var_list_guess((33*n+1):(39*n))=reshape(aG_mat,1,6*n);
-var_list_guess((39*n+1):(42*n))=sqrt(1e5/tf/3)*ones(1,3*n); % var_list_guess((39*n+1):(42*n))=reshape(u_mat,1,3*n);
 
-var_list_guess([42*n+1,42*n+2])=[tf/2-sqrt((h_jump+0.5)/2/g),tf/2+sqrt((h_jump+0.5)/2/g)]; %[0.3*tf,0.7*tf];
+% Ensure the cost of initial guess is high enough for better performance of subproblem algorithm cg
+h=tf/(n-1);
+effort_list=sum(u_mat.^2);
+cost=h/2*(effort_list(1)+effort_list(end)+2*sum(effort_list(2:(end-1))));
+
+if isflip
+    if cost>=2e5
+        var_list_guess((39*n+1):(42*n))=reshape(u_mat,1,3*n);
+    else
+        var_list_guess((39*n+1):(42*n))=reshape(u_mat*sqrt(3e5/cost),1,3*n);
+    end
+    var_list_guess([42*n+1,42*n+2])=[tf/2-sqrt((h_jump+2.5)/2/g),tf/2+sqrt((h_jump+2.5)/2/g)];
+else
+    if cost>=5e4
+        var_list_guess((39*n+1):(42*n))=reshape(u_mat,1,3*n);
+    else
+        var_list_guess((39*n+1):(42*n))=sqrt(8e4/tf/3)*ones(1,3*n);
+    end
+    var_list_guess([42*n+1,42*n+2])=[tf/2-sqrt((h_jump+0.3)/2/g),tf/2+sqrt((h_jump+0.3)/2/g)];
+end
 
 end

@@ -120,12 +120,21 @@ var_list_guess((35*n+1):(45*n))=reshape(G_mat,1,10*n);
 var_list_guess((45*n+1):(55*n))=reshape(vG_mat,1,10*n);
 var_list_guess((55*n+1):(65*n))=reshape(aG_mat,1,10*n);
 var_list_guess((65*n+1):(69*n))=reshape(GRF_mat,1,4*n);
-var_list_guess((69*n+1):(75*n))=reshape(u_mat,1,6*n);
-%var_list_guess((69*n+1):(75*n))=sqrt(2e4/tf/6)*ones(1,6*n);
+
+% Ensure intial guess with cost (for better performance of subproblemalgorithm cg)
+effort_list=sum(u_mat.^2);
+h=tf/(n-1);
+cost=h/2*(effort_list(1)+effort_list(end)+2*sum(effort_list(2:(end-1))));
+if cost>=2e4
+    var_list_guess((69*n+1):(75*n))=reshape(u_mat,1,6*n);
+else
+    var_list_guess((69*n+1):(75*n))=reshape(u_mat*sqrt(5e4/cost),1,6*n);
+end
+
 if iswalking
     var_list_guess([75*n+1,75*n+2])=[tf/2,tf/2]; % for walking
 else
-    var_list_guess([75*n+1,75*n+2])=[tf/2-sqrt((h_run/6+d_run/4)/2/g),tf/2+sqrt((h_run/6+d_run/4)/2/g)];
+    var_list_guess([75*n+1,75*n+2])=[tf/2-sqrt((h_run/10+d_run/6)/2/g),tf/2+sqrt((h_run/10+d_run/6)/2/g)];
 end
 
 

@@ -1,10 +1,9 @@
-function [c,ceq] = running_nlcon(var_list,n,m_list,I_list,g,L_list,d_list,d_run,h_run,tf,h,ft_clr)
-% Nonlinear conditions.
-% P,G,vG,aG are symbolic expressions dependent on q,vq,aq.
+function [c,ceq] = running_nonlinear_constraints(var_list,n,m_list,I_list,g,L_list,d_list,d_run,h_run,tf,h,ft_clr)
 
-ceq=[]; %ceq=0
-c=[]; %c<=0
+ceq=[]; % all entries in ceq are constrained to be =0
+c=[]; % all entries in c are constrained to be <=0
 
+% Break down decision variable list
 q_mat=reshape(var_list(1:(5*n)),5,n);
 vq_mat=reshape(var_list((5*n+1):(10*n)),5,n);
 aq_mat=reshape(var_list((10*n+1):(15*n)),5,n);
@@ -20,17 +19,16 @@ GRF_mat=reshape(var_list((65*n+1):(69*n)),4,n);
 u_mat=reshape(var_list((69*n+1):(75*n)),6,n);
 
 t1=var_list(75*n+1); t2=var_list(75*n+2);
+% Calculate the corresponding knot point for phase transition t1 and t2
 n1=(n-1)/tf*t1+1; n2=(n-1)/tf*t2+1;
 
 L1=L_list(1);L2=L_list(2);L3=L_list(3);L4=L_list(4);L5=L_list(5);
 d1=d_list(1);d2=d_list(2);d3=d_list(3);d4=d_list(4);d5=d_list(5);
 
-%kinematics and dynamics
 for i=1:n % at every knot point
-    
     q_list=q_mat(:,i); vq_list=vq_mat(:,i); aq_list=aq_mat(:,i); P_list=P_mat(:,i); vP0_list=vP0_mat(:,i); aP0_list=aP0_mat(:,i); vP5_list=vP5_mat(:,i); aP5_list=aP5_mat(:,i); G_list=G_mat(:,i); vG_list=vG_mat(:,i); aG_list=aG_mat(:,i); GRF_list=GRF_mat(:,i); u_list=u_mat(:,i);
     
-    % Dynamics:
+    % Dynamics ------------------------------------------------------------
     Pu_list=[P_list(1:6)',P_list(5:6)',P_list(9:10)'];
     Pui_list=Pu_list(1:2:end); Puj_list=Pu_list(2:2:end); Gi_list=G_list(1:2:end); Gj_list=G_list(2:2:end); aGi_list=aG_list(1:2:end); aGj_list=aG_list(2:2:end); 
     for k=1:5
@@ -42,8 +40,7 @@ for i=1:n % at every knot point
         ceq=[ceq,eq_dynamics];
     end
 
-    % Kinematics (body-based):
-    % !!! PUT KINEMATICS EXPLICITLY HERE!!!
+    % Kinematics (upper body based) ---------------------------------------
     G3i=G_list(5); G3j=G_list(6); vG3i=vG_list(5); vG3j=vG_list(6); aG3i=aG_list(5); aG3j=aG_list(6);
     
     q1=q_list(1); q2=q_list(2); q3=q_list(3); q4=q_list(4); q5=q_list(5);
@@ -64,6 +61,7 @@ for i=1:n % at every knot point
     G5i=P4i-d5*sin(q5); G5j=P4j-d5*cos(q5);
     G=[G1i,G1j,G2i,G2j,G3i,G3j,G4i,G4j,G5i,G5j]';
     
+    % Following equations are all calculated by Jacobian.
     vP0i=vG3i - vq1*cos(conj(q1))*conj(L1) - vq2*cos(conj(q2))*conj(L2) - vq3*cos(conj(q3))*conj(d3);
     vP0j=vG3j + vq1*sin(conj(q1))*conj(L1) + vq2*sin(conj(q2))*conj(L2) + vq3*sin(conj(q3))*conj(d3);
     vP0=[vP0i,vP0j]';
@@ -100,29 +98,30 @@ for i=1:n % at every knot point
 
     ceq=[ceq,(P_list-P)',(G_list-G)',(vG_list-vG)',(aG_list-aG)',(vP0_list-vP0)',(vP5_list-vP5)',(aP0_list-aP0)',(aP5_list-aP5)'];    
     
-    % Terrain constraints: P0j>=h_jump*1(P0i-d_jump)
+    % Terrain constraints: Pj >= terrain(Pi) for feet P0,P5 and knees P1 & P4
+    d_safe=0.05; % safety distance for not hitting the edge of the stairs
     P0i=P_list(1); P0j=P_list(2); P5i=P_list(11); P5j=P_list(12);
-    h_terrain_0=h_run*heaviside(P0i-(d_run-0.1)+1e-6);
-    h_terrain_1=h_run*heaviside(P1i-(d_run-0.1)+1e-6);
-    h_terrain_4=h_run*heaviside(P4i-(d_run-0.1)+1e-6);
-    h_terrain_5=h_run*heaviside(P5i-(d_run-0.1)+1e-6);
-    c=[c,(h_terrain_0-P0j),(h_terrain_5-P5j),(h_terrain_1-P1j),(h_terrain_4-P4j)];
+    h_terrain_0=h_run*heaviside(P0i-(d_run-0.1)+d_safe);
+    h_terrain_1=h_run*heaviside(P1i-(d_run-0.1)+d_safe);
+    h_terrain_4=h_run*heaviside(P4i-(d_run-0.1)+d_safe);
+    h_terrain_5=h_run*heaviside(P5i-(d_run-0.1)+d_safe);
+    c=[c,(h_terrain_1-P1j),(h_terrain_4-P4j)]; % P0 and P5 are included in the phase constraints below
         
     % Phase constraints:
     P0i=P_list(1); P0j=P_list(2); vP0i=vP0_list(1); vP0j=vP0_list(2); aP0i=aP0_list(1); aP0j=aP0_list(2);
     P5i=P_list(11); P5j=P_list(12); vP5i=vP5_list(1); vP5j=vP5_list(2); aP5i=aP5_list(1); aP5j=aP5_list(2);
     if i<=n1
         % Contact phase1 constraints:
-        ceq=[ceq,GRF_list(3:4)',u_list(6),P0i,P0j,vP0i,vP0j,aP0i,aP0j];
-        %c=[c,0,h_terrain_5+ft_clr-P5j];
+        ceq=[ceq,GRF_list(3:4)',u_list(6),P0i,P0j,vP0i,vP0j,aP0i,aP0j]; % foot P0 fixed, no ground reaction force or torque at foot P5
+        c=[c,0,(h_terrain_5+ft_clr-P5j)]; % terrain constraints with foot clearance
     elseif (i>n1)&&(i<=n2)
         % Aerial Phase constraints
-        ceq=[ceq,GRF_list(1:4)',u_list(1),u_list(6),0,0,0];
-        %c=[c,h_terrain_0+ft_clr-P0j,h_terrain_5+ft_clr-P5j];
+        ceq=[ceq,GRF_list(1:4)',u_list(1),u_list(6),0,0,0]; % no ground reaction force or torque at feet P0 and P5
+        c=[c,(h_terrain_0+ft_clr-P0j),(h_terrain_5+ft_clr-P5j)]; % terrain constraints with foot clearance
     elseif i>n2
         % Contact phase2 constraints:
-        ceq=[ceq,GRF_list(1:2)',u_list(1),P5i-d_run,P5j-h_run,vP5i,vP5j,aP5i,aP5j];
-        %c=[c,h_terrain_0+ft_clr-P0j,0];
+        ceq=[ceq,GRF_list(1:2)',u_list(1),P5i-d_run,P5j-h_run,vP5i,vP5j,aP5i,aP5j]; % foot P5 fixed, no ground reaction force or torque at foot P0
+        c=[c,(h_terrain_0+ft_clr-P0j),0]; % terrain constraints with foot clearance
     end
     
     % Collocation on body G3 for aerial phase and phase transition
