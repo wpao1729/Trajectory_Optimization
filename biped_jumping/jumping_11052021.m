@@ -1,9 +1,9 @@
-clear all; clc;
+clear; clc;
 
 %% Parameters
 % User-defined parameters
 tf=2; % total time (s) % tf~=2s for flip
-d_jump=0.3; % distance of jump (m)
+d_jump=0.5; % distance of jump (m)
 h_jump=0; % elevation of jump (m)
 miu=0.8; % friction coefficient of the terrain
 n=20; % Number of knot points including 2 ends
@@ -74,13 +74,25 @@ for k=1:n
 end
 
 %% Save animation to mp4 file
-folder='C:/Users/5baow/OneDrive - Georgia Institute of Technology/Desktop/LIDAR Gatech/MATLAB Workspace/Matlab Results/Jumping Animation/';
+% Specify folder to save the animation
+browse_for_folder=true; % set true to browse for folder, false to manually specify
+if browse_for_folder
+    export_folder=uigetdir; % open folder selection box
+else
+    % User manually specify the destination folder
+    workspace=fileparts(fileparts(pwd));
+    export_folder=fullfile(workspace,'Matlab Results','Jumping Animation');
+end
+fprintf('\nAnimation Export folder: %s\n',export_folder);
+
+% Specify animation file name
 if isflip
     filename=sprintf('frontflip_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
 else
     filename=sprintf('jumping_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
 end
-writerObj = VideoWriter([folder,filename],'MPEG-4'); % for mp4 file
+
+writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
 framerate=1/(tf/n); % frame rate (frequency)
 writerObj.FrameRate = framerate;
 open(writerObj);

@@ -1,4 +1,4 @@
-clear all; clc;
+clear; clc;
 
 %% Parameters
 % User defined parameters:  
@@ -79,13 +79,25 @@ for k=1:size(x_mat,2)
 end
 
 %% Save animation to MP4
-folder='C:/Users/5baow/OneDrive - Georgia Institute of Technology/Desktop/LIDAR Gatech/MATLAB Workspace/Matlab Results/Running Animation/';
+% Specify folder to save the animation
+browse_for_folder=true; % set true to browse for folder, false to manually specify
+if browse_for_folder
+    export_folder=uigetdir; % open folder selection box
+else
+    % User manually specify the destination folder
+    workspace=fileparts(fileparts(pwd));
+    export_folder=fullfile(workspace,'Matlab Results','Running Animation');
+end
+fprintf('\nAnimation Export folder: %s\n',export_folder);
+
+% Specify animation file name
 if iswalking
     filename=sprintf('walking_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
 else
     filename=sprintf('running_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
 end
-writerObj = VideoWriter([folder,filename],'MPEG-4'); % for mp4 file
+
+writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
 framerate=1/(tf/n); % frame rate (frequency)
 writerObj.FrameRate = framerate;
 open(writerObj);

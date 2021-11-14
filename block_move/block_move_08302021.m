@@ -1,4 +1,4 @@
-clear all; clc;
+clear; clc;
 
 %% Parameters
 n=30; % number of points defining the path
