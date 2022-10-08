@@ -110,7 +110,7 @@ else
     else
         var_list_guess((39*n+1):(42*n))=sqrt(8e4/tf/3)*ones(1,3*n);
     end
-    var_list_guess([42*n+1,42*n+2])=[tf/2-sqrt((h_jump+0.3)/2/g),tf/2+sqrt((h_jump+0.3)/2/g)];
+    var_list_guess([42*n+1,42*n+2])=[tf/2-sqrt((h_jump+0.5)/2/g),tf/2+sqrt((h_jump+0.5)/2/g)]; % typically +0.2 ~ +0.5
 end
 
 end

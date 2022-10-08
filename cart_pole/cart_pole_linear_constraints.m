@@ -21,7 +21,7 @@ n_path=2*n; % number of path constraints
 A=zeros(n_path,n_dv); b=zeros(n_path,1);
 
 % Path constraints: force <= u_max
-u_max=1e3; % upper limit of the absolute value of force
+u_max = 100; % upper limit of the absolute value of force
 A(1:n,(6*n+1):(7*n))=eye(n); A((n+1):(2*n),(6*n+1):(7*n))=-1*eye(n);
 b(1:(2*n))=u_max;
 

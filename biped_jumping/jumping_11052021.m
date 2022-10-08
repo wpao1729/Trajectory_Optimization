@@ -2,14 +2,14 @@ clear; clc;
 
 %% Parameters
 % User-defined parameters
-tf=2; % total time (s) % tf~=2s for flip
-d_jump=0.5; % distance of jump (m)
-h_jump=0; % elevation of jump (m)
+tf=1.5; % total time (s) % tf~=2s for flip
+d_jump=0.8; % distance of jump (m)
+h_jump=0.5; % elevation of jump (m)
 miu=0.8; % friction coefficient of the terrain
-n=20; % Number of knot points including 2 ends
+n=18; % Number of knot points including 2 ends
 ft_clr=0.005; % foot clearance (m)
 qi_list=[0,0,0]/180*pi; % starting position
-isflip=true; % set true if flip, false if normal jump
+isflip=false; % set true if flip, false if normal jump
 
 % Physics parameters:
 g=9.81; % gravitational acceleration (m/s^2)
@@ -65,42 +65,46 @@ for k=1:n
     plot(P_mat(1:2:end,k)',P_mat(2:2:end,k)','-bo'); hold on;
     plot([-0.5,d_jump-0.1,d_jump-0.1,d_jump+0.5],[0,0,h_jump,h_jump],'-r'); hold off;
     %plot([d_jump-0.5,d_jump+0.1,d_jump+0.1,0],[h_jump,h_jump,0,0]); hold off;
-    axis([-1,d_jump+1,0,h_jump+2]); 
+    if isflip
+        axis([-1,d_jump+1,0,h_jump+2]); 
+    else
+        axis([-0.5,d_jump+0.5,0,h_jump+1.6]); 
+    end
     set(gca,'DataAspectRatio',[1 1 1]);
     title('Jumping Animation','FontSize', 15);
     xlabel('x (m)','FontSize', 15); ylabel('z (m)','FontSize', 15);
     frame_list(k) = getframe(gcf) ;
     drawnow;
 end
+frame_list=frame_list([1,1:end,end]);
 
 %% Save animation to mp4 file
-% Specify folder to save the animation
-browse_for_folder=true; % set true to browse for folder, false to manually specify
-if browse_for_folder
+save = false;
+if save
+    % Specify folder to save the animation
     export_folder=uigetdir; % open folder selection box
-else
-    % User manually specify the destination folder
-    workspace=fileparts(fileparts(pwd));
-    export_folder=fullfile(workspace,'Matlab Results','Jumping Animation');
-end
-fprintf('\nAnimation Export folder: %s\n',export_folder);
+%     % User manually specify the destination folder
+%     workspace=fileparts(fileparts(pwd));
+%     export_folder=fullfile(workspace,'Matlab Results','Jumping Animation');
+    fprintf('\nAnimation Export folder: %s\n',export_folder);
 
-% Specify animation file name
-if isflip
-    filename=sprintf('frontflip_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
-else
-    filename=sprintf('jumping_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
-end
+    % Specify animation file name
+    if isflip
+        filename=sprintf('frontflip_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
+    else
+        filename=sprintf('jumping_d%gm_h%gm_t%gs_cost%g.mp4',d_jump,h_jump,tf,cost);
+    end
 
-writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
-framerate=1/(tf/n); % frame rate (frequency)
-writerObj.FrameRate = framerate;
-open(writerObj);
-for i=1:length(frame_list) 
-    writeVideo(writerObj, frame_list(i));
+    writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
+    framerate=1/(tf/n); % frame rate (frequency)
+    writerObj.FrameRate = framerate;
+    open(writerObj);
+    for i=1:length(frame_list) 
+        writeVideo(writerObj, frame_list(i));
+    end
+    close(writerObj);
 end
-close(writerObj);
-
+    
 %% Plot torques vs time
 u_mat=reshape(var_list((39*n+1):(42*n)),3,n);
 figure(63);

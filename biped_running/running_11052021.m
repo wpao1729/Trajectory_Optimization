@@ -7,7 +7,7 @@ d_run=0.8; % distance of one running step from the previous stance (m)
 h_run=0; % elevation of one running step from the previous stance (m)
 miu=0.8; % friction coefficient of the terrain
 ft_clr=0.005; % foot clearance (m)
-iswalking=true; % set true if walking, false if running
+iswalking=false; % set true if walking, false if running
 n=15; % Number of knot points including 2 ends
 
 % Physics parameters:
@@ -79,32 +79,31 @@ for k=1:size(x_mat,2)
 end
 
 %% Save animation to MP4
-% Specify folder to save the animation
-browse_for_folder=true; % set true to browse for folder, false to manually specify
-if browse_for_folder
+save = false;
+if save
+    % Specify folder to save the animation
     export_folder=uigetdir; % open folder selection box
-else
-    % User manually specify the destination folder
-    workspace=fileparts(fileparts(pwd));
-    export_folder=fullfile(workspace,'Matlab Results','Running Animation');
-end
-fprintf('\nAnimation Export folder: %s\n',export_folder);
+%     % User manually specify the destination folder
+%     workspace=fileparts(fileparts(pwd));
+%     export_folder=fullfile(workspace,'Matlab Results','Running Animation');
+    fprintf('\nAnimation Export folder: %s\n',export_folder);
 
-% Specify animation file name
-if iswalking
-    filename=sprintf('walking_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
-else
-    filename=sprintf('running_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
-end
+    % Specify animation file name
+    if iswalking
+        filename=sprintf('walking_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
+    else
+        filename=sprintf('running_d%gm_h%gm_t%gs_cost%g.mp4',d_run,h_run,tf,cost);
+    end
 
-writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
-framerate=1/(tf/n); % frame rate (frequency)
-writerObj.FrameRate = framerate;
-open(writerObj);
-for i=1:length(frame_list) 
-    writeVideo(writerObj, frame_list(i));
+    writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
+    framerate=1/(tf/(n-1)); % frame rate (frequency)
+    writerObj.FrameRate = framerate;
+    open(writerObj);
+    for i=1:length(frame_list) 
+        writeVideo(writerObj, frame_list(i));
+    end
+    close(writerObj);
 end
-close(writerObj);
 
 %% Plot torques vs time
 u_mat=reshape(var_list((69*n+1):(75*n)),6,n);

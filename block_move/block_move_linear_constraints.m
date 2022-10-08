@@ -11,7 +11,7 @@ x1=0; xf=d; v1=0; vf=0;
 Aeq(1,1)=1; Aeq(2,n)=1; Aeq(3,n+1)=1; Aeq(4,2*n)=1;
 beq(1:4)=[x1,xf,v1,vf];
 
-% Collocation constraints - trapezoidal rule: x(k+1)-x(k)=h/2*(u(k+1)+u(k))
+% Collocation constraints - trapezoidal rule: x(k+1)-x(k)=h/2*(v(k+1)+v(k))
 mat1=diag(-1*ones(1,n))+diag(ones(1,n-1),1); mat1=mat1(1:(end-1),:);
 mat2=diag(-h/2*ones(1,n))+diag(-h/2*ones(1,n-1),1); mat2=mat2(1:(end-1),:);
 Aeq((n_bc+1):(n_bc+(n-1)),1:n)=mat1; Aeq((n_bc+1):(n_bc+(n-1)),(n+1):(2*n))=mat2; % collocation between x and v

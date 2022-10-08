@@ -5,7 +5,7 @@ clear; clc;
 n=50; % number of knot (include 2 ends)
 d=1; % distance the cart moves (m)
 T=3; % total time (s)
-T_fixed=true; % set true if T is fixed, false if optimize T
+T_fixed=false; % set true if T is fixed, false if optimize T
 simpson=true; % set true if collocation by simpson, false if collocation by trapezoidal
 
 % Physics parameters:
@@ -78,28 +78,27 @@ for k=1:n
 end
 
 %% Save animation to mp4
-% Specify folder to save the animation
-browse_for_folder=true; % set true to browse for folder, false to manually specify
-if browse_for_folder
+save = false;
+if save
+    % Specify folder to save the animation
     export_folder=uigetdir; % open folder selection box
-else
-    % User manually specify the destination folder
-    workspace=fileparts(fileparts(pwd));
-    export_folder=fullfile(workspace,'Matlab Results','Cart-pole Animation');
-end
-fprintf('\nAnimation Export folder: %s\n',export_folder);
+    % % User manually specify the destination folder
+    % workspace=fileparts(fileparts(pwd));
+    % export_folder=fullfile(workspace,'Matlab Results','Cart-pole Animation');
+    fprintf('\nAnimation Export folder: %s\n',export_folder);
 
-filename=sprintf('cart_pole_d%gm_t%gs_cost%g.mp4',d,T,cost);
+    filename=sprintf('cart_pole_d%gm_t%gs_cost%g.mp4',d,T,cost);
 
-writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
-% writerObj = VideoWriter([folder,filename],'MPEG-4'); % for mp4 file
-framerate=1/(T/n); % frame rate (frequency)
-writerObj.FrameRate = framerate;
-open(writerObj);
-for i=1:length(frame_list) 
-    writeVideo(writerObj, frame_list(i));
+    writerObj = VideoWriter(fullfile(export_folder,filename),'MPEG-4'); % for mp4 file
+    % writerObj = VideoWriter([folder,filename],'MPEG-4'); % for mp4 file
+    framerate=1/(T/n); % frame rate (frequency)
+    writerObj.FrameRate = framerate;
+    open(writerObj);
+    for i=1:length(frame_list) 
+        writeVideo(writerObj, frame_list(i));
+    end
+    close(writerObj);
 end
-close(writerObj);
 
 %% Plot force u over time
 u_list=var_list((6*n+1):(7*n)); 
